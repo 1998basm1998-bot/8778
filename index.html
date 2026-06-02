@@ -3,26 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تسجيل الدخول</title>
-    <link rel="stylesheet" href="style.css">
+    <title>تطبيق فن التقنية</title>
+    <link rel="manifest" href="./manifest.json">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            text-align: center;
+            padding: 50px;
+        }
+        
+        /* تنسيق شاشة التثبيت المنبثقة (Modal) */
+        #installModal {
+            display: none; /* مخفية افتراضياً */
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ffffff;
+            padding: 20px 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            text-align: center;
+            z-index: 1000;
+            width: 320px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        #installModal img {
+            width: 72px;
+            height: 72px;
+            margin-bottom: 15px;
+            border-radius: 15px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .btn-install { background: #1e3c72; color: #ffffff; }
+        .btn-cancel { background: #e0e0e0; color: #333333; }
+    </style>
 </head>
 <body>
-    <div class="glass-container">
-        <h2>تسجيل الدخول</h2>
-        <form id="loginForm">
-            <div class="input-group">
-                <label for="username">اسم المستخدم</label>
-                <input type="text" id="username" placeholder="أدخل اسمك هنا" required>
-            </div>
-            <div class="input-group">
-                <label for="password">كلمة المرور</label>
-                <input type="password" id="password" placeholder="أدخل كلمة المرور" required>
-            </div>
-            <button type="submit">دخول</button>
-        </form>
-        <p id="message"></p>
+
+    <h1>مرحباً بك في واجهة التطبيق</h1>
+    <p>هذا التطبيق جاهز للعمل بدون إنترنت ويدعم التثبيت المباشر.</p>
+
+    <div id="installModal">
+        <img src="./icon-192x192.png" alt="أيقونة التطبيق">
+        <h3>تثبيت التطبيق</h3>
+        <p>قم بتثبيت التطبيق على جهازك للوصول السريع والعمل دون اتصال بالإنترنت.</p>
+        <button id="installBtn" class="btn btn-install">تثبيت الآن</button>
+        <button id="cancelBtn" class="btn btn-cancel">ليس الآن</button>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        // 1. تسجيل الـ Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('تم تسجيل Service Worker بنجاح:', reg.scope))
+                    .catch(err => console.error('فشل تسجيل Service Worker:', err));
+            });
+        }
+
+        // 2. التحكم في ظهور زر التثبيت
+        let deferredPrompt;
+        const installModal = document.getElementById('installModal');
+        const installBtn = document.getElementById('installBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // منع المتصفح من إظهار رسالة التثبيت الافتراضية
+            e.preventDefault();
+            // حفظ الحدث لاستخدامه لاحقاً عند ضغط المستخدم على زر التثبيت
+            deferredPrompt = e;
+            // إظهار نافذة التثبيت المخصصة
+            installModal.style.display = 'block';
+        });
+
+        // عند الضغط على زر التثبيت في الـ Modal
+        installBtn.addEventListener('click', async () => {
+            installModal.style.display = 'none'; // إخفاء النافذة
+            if (deferredPrompt) {
+                // إظهار واجهة التثبيت الخاصة بالمتصفح
+                deferredPrompt.prompt();
+                // انتظار رد فعل المستخدم (موافقة أو رفض)
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`نتيجة التثبيت: ${outcome}`);
+                // تفريغ المتغير
+                deferredPrompt = null;
+            }
+        });
+
+        // عند الضغط على زر الإلغاء
+        cancelBtn.addEventListener('click', () => {
+            installModal.style.display = 'none';
+        });
+    </script>
 </body>
 </html>
